@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+
+{% block navactive %}
+<li class="nav-item">
+    <a class="nav-link active" aria-current="page" href="/tasks">Tasks</a>
+</li>
+{% endblock navactive %}
+
+{% block trcorner %}
+<script>
+function getResult() {
+    let query = document.getElementById("search").value;
+
+    fetch(`/search/${query}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Server returned an error");
+            }
+            return response.json();  // Ensure JSON response
+        })
+        .then(data => {
+            let taskList = document.getElementById("task-list");
+            taskList.innerHTML = ""; // Clear previous results
+
+            if (data.length === 0) {
+                taskList.innerHTML = "<li>No tasks found</li>";
+            } else {
+                data.forEach(task => {
+                    taskList.innerHTML += `
+                        <div class="list-group-item">
+                            <a class="d-flex justify-content-between align-items-center text-decoration-none" 
+                               data-bs-toggle="collapse" href="#task${task.id}">
+                                <span>${task.task_name}</span>
+                            </a>
+                            <div class="collapse mt-2" id="task${task.id}">
+                                <p><strong>Details:</strong> ${task.task_details}</p>
+                                <button onclick="updateTask(${task.id})" class="btn btn-sm btn-primary">Update</button>
+                                <button onclick="deleteTask(${task.id})" class="btn btn-sm btn-danger">Delete</button>
+                            </div>
+                        </div>`;
+                });
+            }
+        })
+        .catch(error => console.error("Error fetching search results:", error));
+}
+</script>
+<div class="d-flex">
+    <input class="form-control me-2" type="search" placeholder="Search" id="search" aria-label="Search">
+    <button class="btn btn-outline-light" onclick="getResult()">Search</button>
+</div>
+{% endblock trcorner %}
+
+{% block title %}
+To Do - Tasks
+{% endblock title %}
+
+{% block bodyblock %}
+<style>
+    .sidebar {
+        height: 100vh;
+        background: #f8f9fa;
+        padding: 15px;
+    }
+
+    .task-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .task-list li {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        cursor: pointer;
+    }
+
+    .task-list li:hover,
+    .task-list li.active {
+        background: #000000;
+        color: #fff;
+    }
+</style>
+<script>
+
+    function updateTask(taskId) {
+
+
+
+        fetch(`/update_task/${taskId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("task").value = data.task_name;
+                document.getElementById("details").value = data.task_details;
+            })
+            .catch(error => console.error("Error updating task:", error));
+    }
+
+    function deleteTask(taskId, category) {
+        fetch(`/delete/${taskId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to delete task");
+                }
+                return response.json();
+            })
+            .then(() => {
+                fetchTasks(category);
+            })
+            .catch(error => console.error("Error deleting task:", error));
+    }
+
+
+    function fetchTasks(category) {
+        fetch(`/get_tasks/${category}`)
+            .then(response => response.json())
+            .then(data => {
+                let taskList = document.getElementById("task-list");
+                taskList.innerHTML = "";
+
+                if (data.length == 0) {
+                    taskList.innerHTML = `<div class="alert alert-light" role="alert">No task in the list</div>`;
+                } else {
+                    data.forEach((task, index) => {
+                        taskList.innerHTML += `
+                        <div class="list-group-item">
+                            <a class="d-flex justify-content-between align-items-center text-decoration-none" 
+                               data-bs-toggle="collapse" href="#task${task.id}">
+                                <span>${task.task_name}</span>
+                            </a>
+                            <div class="collapse mt-2" id="task${task.id}">
+                                <p><strong>Details:</strong> ${task.task_details}</p>
+                                
+                                <!-- Placeholder where the form will be inserted -->
+                                <div id="updateForm${task.id}"></div>
+                                
+                                <button id="updatebtn${task.id}" onclick="showUpdateForm(${task.id}, '${task.task_name}', '${task.task_details}', '${category}')" 
+                                    class="btn btn-sm btn-primary">Update</button>
+                                <button onclick="deleteTask(${task.id}, '${category}')" class="btn btn-sm btn-danger">Delete</button>
+                            </div>
+                        </div>`;
+                        console.log(category)
+                    });
+                }
+            })
+            .catch(error => console.error("Error fetching tasks:", error));
+    }
+
+    function showUpdateForm(taskId, taskName, taskDetails, underList) {
+        let formContainer = document.getElementById(`updateForm${taskId}`);
+        document.getElementById(`updatebtn${taskId}`).style.display = "none";
+        formContainer.innerHTML = `
+        <div class="p-4" id="updateTaskForm${taskId}">
+            <h5>Update ${taskName}</h5>
+            <form action="/update/${taskId}" method="post">
+                <input required type="text" class="form-control mb-3" name="task" value="${taskName}" placeholder="Task Name">
+                <input type="text" class="form-control mb-3" name="details" value="${taskDetails}" placeholder="Task Details">
+                
+                <input value="${underList}" type="text" class="form-select mb-3" name="category" list="taskSuggestions" 
+                    aria-label="Default select example">
+                <datalist id="taskSuggestions">
+                    {% for tl in tasksList %}
+                        <option value="{{ tl }}">{{ tl }}</option>
+                    {% endfor %}
+                </datalist>
+                
+                <button type="submit" class="btn btn-dark">Update</button>
+            </form>
+        </div>`;
+    }
+
+</script>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar (Visible on Large Screens) -->
+        <nav class="col-md-3 col-lg-2 d-none d-md-block sidebar">
+            <h4 class="text-center">Task Lists</h4>
+            <ul class="task-list">
+                {% for tl in tasksList %}
+                <li onclick="fetchTasks('{{tl}}')">{{ tl }}</li>
+                {% endfor %}
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="col-md-9 col-lg-10">
+            <!-- Dropdown Menu (Visible on Small Screens) -->
+            <div class="d-md-none my-3">
+                <select class="form-select" id="taskDropdown" onchange="changeTaskList()">
+                    <option value="Work">Work</option>
+                    <option value="Personal">Personal</option>
+                    <option value="Shopping">Shopping</option>
+                </select>
+            </div>
+            <div class="p-4">
+                <h3 id=" task-title">Add Task</h3>
+                <form action="/add" method="post">
+                    <input required type="text" class="form-control mb-3" name="task" id="task" placeholder="Task Name">
+                    <input type="text" class="form-control mb-3" name="details" id="task" placeholder="Task Details">
+                    <input type="text" class="form-select mb-3" name="category" list="taskSuggestions"
+                        aria-label="Default select example">
+                    <datalist id="taskSuggestions">
+                        {% for tl in tasksList %}
+                        <option value="{{tl}}">{{ tl }}</option>
+                        {% endfor %}
+                    </datalist>
+
+                    </input>
+                    <button type="submit" class="btn btn-dark">Add</button>
+                </form>
+            </div>
+            <div class="p-4">
+
+
+
+
+                <div class="mt-4">
+                    <h2 class="mb-3 text-center" id="taskListTitle"></h2>
+
+                    <div class="list-group" id="task-list">
+
+                    </div>
+                </div>
+
+
+
+
+
+
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock bodyblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}
+To Do - Log In
+{% endblock title %}
+
+{% block navactive %}
+<!-- <li class="nav-item">
+    <a class="nav-link" href="/">Home</a>
+</li> -->
+{% endblock navactive %}
+
+{% block bodyblock %}
+<form action="/otp" method="post" class="container my-5 col-md-3">
+    <div class="mb-3">
+        <label for="exampleInputEmail1" class="form-label">Email address</label>
+        <input name="email" type="email" value="{{ email }}" class="form-control" id="exampleInputEmail1"
+            aria-describedby="emailHelp">
+    </div>
+    <div class="d-grid gap-2 col-6 mx-auto">
+        <button class="btn btn-dark" type="submit">Send OTP</button>
+    </div>
+</form>
+
+<form method="post" action="/verify" class="container my-5 col-md-3">
+    <div class="mb-3">
+        <label for="exampleInputPassword1" class="form-label">OTP</label>
+        <input type="password" class="form-control" id="exampleInputPassword1" name="otp">
+    </div>
+    {% if verified == "False" %}
+        <div class="alert alert-danger" role="alert">
+            Incorrect OTP. Please try again.
+        </div>
+    {% endif %}
+    <div class="mb-3 form-check">
+        <input name="remember" type="checkbox" class="form-check-input" id="exampleCheck1">
+        <label class="form-check-label" for="exampleCheck1">Remember Me</label>
+    </div>
+    <div class="d-grid gap-2 col-6 mx-auto">
+        <button class="btn btn-dark" type="submit">Log In</button>
+    </div>
+</form>
+{% endblock bodyblock %}

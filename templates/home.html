@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}
+To Do - Home
+{% endblock title %}
+
+{% block trcorner %}
+<a href="/login"><button type="button" class="btn btn-light">Log In</button>
+</a>
+{% endblock trcorner %}
+
+{% block bodyblock %}
+<section class="container my-5">
+    <div class="row text-center">
+        <div class="col-md-4">
+            <div class="card p-4">
+                <img style="filter: grayscale(1);" src="{{ url_for('static', filename='images/taskManagement.png') }}"
+                    class="card-img-top" alt="Task Management">
+                <h3>Easy Task Management</h3>
+                <p>Add, edit, and delete tasks effortlessly.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4">
+                <img style="filter: grayscale(1);" src="{{ url_for('static', filename='images/trackProgress.png') }}"
+                    class="card-img-top" alt="Track Progress">
+                <h3>Track Your Progress</h3>
+                <p>Mark tasks as completed and stay on top of your goals.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4">
+                <img style="filter: grayscale(1);" src="{{ url_for('static', filename='images/stayOrganized.png') }}"
+                    class="card-img-top" alt="Stay Organized">
+                <h3>Stay Organized</h3>
+                <p>Keep track of your daily to-dos in one place.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock bodyblock %}

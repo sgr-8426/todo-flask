@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI']= 'sqlite:///todo.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db=SQLAlchemy(app)
-app.secret_key = "your secret key"
+app.secret_key = "abc123"
 
 class user(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

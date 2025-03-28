@@ -5,10 +5,10 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI']= 'sqlite:///todo.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db=SQLAlchemy(app)
-app.secret_key = os.getenv('SECRET_KEY')
+app.secret_key = 'ac14b733540d4bb1a912893e6b50944f1f3aedeb57c34834951968592884b903'
 
 class user(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

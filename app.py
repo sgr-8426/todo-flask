@@ -5,12 +5,12 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI']= 'sqlite:///todo.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todo.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db=SQLAlchemy(app)
+db = SQLAlchemy(app)
 app.secret_key = "abc123"
 
-class user(db.Model):
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_email = db.Column(db.String(100), nullable=False, unique=True)
     otp = db.Column(db.Integer, default=None, nullable=True)
@@ -31,13 +31,12 @@ def send_otp(email, otp):
     
     subject = "SGR OTP Code"
     body = f"Your OTP for To Do app by SGR is: {otp}"
-    
-    message = f"Subject: {subject}\n\n{body}"  # Properly formatted message
+    message = f"Subject: {subject}\n\n{body}"
 
     with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()  # Secure connection
-        server.login(sender_email, sender_password)  # Login to email
-        server.sendmail(sender_email, email, message)  # Send formatted email
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, email, message)
 
 @app.route('/')
 def home():
@@ -49,9 +48,7 @@ def home():
 
 @app.route('/login')
 def login():
-    if session.get('varified') == False:
-        return render_template('login.html', email=session.get('email',''), otp=session.get('otp',''), verified='False')
-    return render_template('login.html', email=session.get('email',''), otp=session.get('otp',''))
+    return render_template('login.html', email=session.get('email', ''), otp=session.get('otp', ''))
 
 @app.route('/otp', methods=['POST'])
 def otp():
@@ -63,31 +60,36 @@ def otp():
 
 @app.route('/tasks')
 def tasks():
-    if session.get('varified') == False:
+    if not session.get('varified'):
         return redirect('/login')
     if request.cookies.get('username'):
         session['email'] = request.cookies.get('username')
-    email=session['email']
-    task = db.session.execute(db.select(Tasks).where(Tasks.user_email == email)).scalars().all()  
-    tasksList = list(set(task.under_list for task in task))
-    return render_template('tasks.html', task=task, tasksList=tasksList)
+    email = session['email']
+    tasks = db.session.execute(db.select(Tasks).where(Tasks.user_email == email)).scalars().all()
+    tasks_list = list(set(task.under_list for task in tasks))
+    return render_template('tasks.html', task=tasks, tasksList=tasks_list)
 
 @app.route('/verify', methods=['POST'])
 def verify():
     if request.method == 'POST' and request.form['otp'] == str(session['otp']):
         session['varified'] = True
-        if request.form['remember']=='on':
+        if request.form.get('remember') == 'on':
             resp = make_response(redirect('/'))
             resp.set_cookie('username', session['email'], max_age=60*60*24*30)
+            return resp
         return redirect('/tasks')
-    else:
-        session['varified'] = False
-        return redirect('/login')
+    session['varified'] = False
+    return redirect('/login')
 
 @app.route('/add', methods=['POST'])
 def add():
     if request.method == 'POST':
-        db.session.add(Tasks(user_email=session['email'], task=request.form['task'], task_details=request.form['details'], under_list=request.form['category']))
+        db.session.add(Tasks(
+            user_email=session['email'],
+            task=request.form['task'],
+            task_details=request.form['details'],
+            under_list=request.form['category']
+        ))
         db.session.commit()
     return redirect('/tasks')
 
@@ -100,18 +102,15 @@ def get_tasks(category):
 @app.route('/delete/<int:id>')
 def delete(id):
     task = Tasks.query.get(id)
-    
     if not task:
-        return jsonify({"error": "Task not found"}), 404  # Handle missing tasks
-    
+        return jsonify({"error": "Task not found"}), 404
     db.session.delete(task)
     db.session.commit()
-    
     return jsonify({"message": "Task deleted successfully"}), 200
 
 @app.route('/update/<int:id>', methods=['POST'])
 def update_task(id):
-    task = Tasks.query.get(id)  # Fetch task by ID
+    task = Tasks.query.get(id)
     if not task:
         return redirect('/tasks')
     
@@ -120,37 +119,28 @@ def update_task(id):
     category = request.form.get('category')
 
     if task_name:
-        task.task_name = task_name
+        task.task = task_name
     if task_details:
-        task.task_detail = task_details
+        task.task_details = task_details
     if category:
         task.under_list = category
 
     db.session.commit()
-    
     return redirect('/tasks')
-
-from flask import jsonify
-
-from flask import jsonify
 
 @app.route('/search/<query>')
 def search(query):
     tasks = Tasks.query.filter(Tasks.task.ilike(f"%{query}%")).all()
+    if not tasks:
+        return jsonify([])
 
-    if not tasks:  
-        return jsonify([])  # Return an empty JSON array if no tasks found
-
-    task_list = [
-            {
-                "id": task.id, 
-                "task_name": task.task,  # Change to task.task instead of task.task_name
-                "task_details": task.task_details  # Ensure 'task_details' column exists
-            }
-            for task in tasks
-        ]
+    task_list = [{
+        "id": task.id,
+        "task_name": task.task,
+        "task_details": task.task_details
+    } for task in tasks]
     
-    return jsonify(task_list)  # Return JSON response
+    return jsonify(task_list)
 
 if __name__ == '__main__':
     app.run()

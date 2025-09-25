@@ -26,8 +26,8 @@ with app.app_context():
     db.create_all()
 
 def send_otp(email, otp):
-    sender_email = "sagarnarigara4@gmail.com"
-    sender_password = "elwblkudvfhwzcec"
+    sender_email = "sagar@gmail.com"
+    sender_password = "pass"
     
     subject = "SGR OTP Code"
     body = f"Your OTP for To Do app by SGR is: {otp}"
